@@ -1,0 +1,10 @@
+# Build context is the spectral-dft-test/ root. Keep src/, data/, CMakeLists.txt
+# and web/ (incl. web/data-static + web/public); drop everything heavy/unneeded.
+web/node_modules
+web/.next
+build
+reference
+docs
+**/*.mp4
+**/*.zip
+.git

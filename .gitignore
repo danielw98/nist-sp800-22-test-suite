@@ -1,0 +1,30 @@
+# Build artifacts
+build/
+**/__pycache__/
+
+# Reference clone + archive (re-fetchable; large) and compiled driver
+reference/sts/
+reference/sts-2_1_2.zip
+reference/sts-2.1.2-original/*.exe
+reference/sts-2.1.2-original/*.o
+
+# Ignore everything under docs/ (LaTeX sources, compiled PDF, figures, scripts),
+# but keep the engineering notes (the *.md files). The final paper ships as
+# Testul-Spectral-DFT-NIST-SP-800-22.pdf at the repo root.
+docs/*
+!docs/*.md
+
+# Generated web data (recreated by `pnpm gen`)
+web/data-static/
+web/public/figures/
+web/public/Testul-Spectral-DFT-NIST-SP-800-22.pdf
+
+# Reference paper PDFs (copyrighted, not redistributable; see papers/INDEX.md)
+papers/*.pdf
+
+# Test output (validate.py regenerates the spectrum graphs)
+tests/results.txt
+tests/graphs/
+
+# One-off dev/profiling scratch (not shipped)
+web/measure_dft_rss.py
