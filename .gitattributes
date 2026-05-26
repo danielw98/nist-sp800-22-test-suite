@@ -1,0 +1,6 @@
+# GitHub Linguist: count only the project's own source code in the language stats.
+# The NIST data files are reference data (data.e was being misdetected as "Eiffel"
+# and dominated the language bar); doctest.h and the reference driver are third-party.
+data/** linguist-vendored
+tests/doctest.h linguist-vendored
+reference/** linguist-vendored
