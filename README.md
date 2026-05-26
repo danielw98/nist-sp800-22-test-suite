@@ -45,6 +45,36 @@ by a critical-value comparison (the statistic against `z_{1-alpha/2}` for normal
 tests or `chi^2_{alpha,df}` for chi-square tests), with the p-value kept as
 secondary information.
 
+## Figures
+
+The figures below are from the paper and the site's `/figures` page (axis labels
+are in Romanian, shared with the paper).
+
+**Random vs periodic input.**
+<img src="assets/spectrum-random-vs-periodic.png" alt="Random vs periodic spectrum" width="640">
+A random sequence gives a roughly flat spectrum with about 5% of peaks above the
+95% threshold, exactly as the null hypothesis predicts. A period-8 sequence
+concentrates its energy into a few tall harmonics.
+
+**The standard's error, visualized.**
+<img src="assets/threshold-46-vs-48.png" alt="Documented N1=46 vs correct N1=48" width="640">
+The 50 sorted spectral magnitudes of the section 2.6.8 example. The correct
+threshold (17.31) gives `N1 = 48`; reproducing the document's printed `N1 = 46`
+would need a threshold about 5% lower (16.48), excluding the two borderline peaks
+shown in orange.
+
+**One million Monte-Carlo runs under H0.**
+<img src="assets/montecarlo-h0.png" alt="Monte-Carlo distribution under H0" width="640">
+Left: the empirical distribution of `N1` over 10^6 random sequences, against the
+theoretical Gaussians using the empirical and the NIST standard deviation. Right:
+the resulting p-value distribution. The slight spread quantifies the test's known
+variance inflation relative to the NIST normalization.
+
+**p-value uniformity on real data.**
+<img src="assets/pvalue-uniformity.png" alt="p-value uniformity for pi and e" width="640">
+Per-stream p-value histograms for the binary expansions of pi (uniform) and e
+(slightly non-uniform) across 100 streams.
+
 ## Layout
 
 ```
