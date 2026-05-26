@@ -1,0 +1,210 @@
+@import "tailwindcss";
+
+/* Class-based dark mode: `dark:` variants apply when <html class="dark">. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #f6f8fb;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --foreground: #14202c;
+  --muted: #5a6b7b;
+  --border: #e3e8ef;
+  --accent: #2563b0;
+  --accent-fg: #ffffff;
+  --accent-weak: #e9f1fb;
+  --danger: #c0392b;
+  --danger-weak: #fcebe9;
+  --ok: #2f855a;
+  --ok-weak: #e7f5ee;
+  --code-bg: #0d1117;
+  --shadow: 0 1px 2px rgba(15, 32, 44, 0.06), 0 1px 3px rgba(15, 32, 44, 0.04);
+}
+
+.dark {
+  --background: #0b1117;
+  --surface: #131c26;
+  --surface-2: #0f1822;
+  --foreground: #e6edf3;
+  --muted: #93a3b3;
+  --border: #243140;
+  --accent: #5aa2e0;
+  --accent-fg: #08121c;
+  --accent-weak: #16273a;
+  --danger: #f1857a;
+  --danger-weak: #2a1614;
+  --ok: #5fd39b;
+  --ok-weak: #11271d;
+  --code-bg: #0b0f15;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-weak: var(--accent-weak);
+  --color-danger: var(--danger);
+  --color-danger-weak: var(--danger-weak);
+  --color-ok: var(--ok);
+  --color-ok-weak: var(--ok-weak);
+  --font-sans: var(--font-sans-loaded, ui-sans-serif), system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono: var(--font-mono-loaded, ui-monospace), "Cascadia Code", Consolas, "Liberation Mono", monospace;
+  /* Bump the two smallest steps so labels/captions read comfortably (Tailwind
+     defaults are 12px / 14px; xs lifted to 14px, sm to 15px). */
+  --text-xs: 0.875rem;
+  --text-sm: 0.9375rem;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent-weak);
+}
+
+/* Long-form paper content (MDX). */
+.prose-paper {
+  line-height: 1.75;
+  max-width: 52rem;
+  font-size: 1.02rem;
+}
+.prose-paper h1 {
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 1rem;
+}
+.prose-paper h2 {
+  font-size: 1.45rem;
+  font-weight: 700;
+  margin: 2.2rem 0 0.75rem;
+  letter-spacing: -0.01em;
+}
+.prose-paper h3 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.5rem;
+}
+.prose-paper p {
+  margin: 0.85rem 0;
+}
+.prose-paper ul,
+.prose-paper ol {
+  margin: 0.85rem 0;
+  padding-left: 1.4rem;
+  list-style: revert;
+}
+.prose-paper li {
+  margin: 0.35rem 0;
+}
+.prose-paper a:not(.btn) {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.prose-paper img {
+  margin: 1.4rem 0;
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  background: #ffffff;
+  max-width: 100%;
+}
+.prose-paper table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2rem 0;
+  font-size: 0.92rem;
+}
+.prose-paper th,
+.prose-paper td {
+  border: 1px solid var(--border);
+  padding: 0.4rem 0.65rem;
+  text-align: left;
+}
+.prose-paper th {
+  background: var(--surface-2);
+}
+.prose-paper blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 1rem;
+  color: var(--muted);
+  margin: 1rem 0;
+}
+
+/* KaTeX display math: allow horizontal scroll on small screens. */
+.prose-paper .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.25rem 0;
+}
+
+/* Shiki code blocks emitted by rehype-pretty-code. */
+.prose-paper pre,
+pre[data-theme],
+.prose-paper [data-rehype-pretty-code-figure] pre {
+  background: var(--code-bg) !important;
+  color: #e6edf3;
+  border-radius: 0.6rem;
+  padding: 1rem 1.1rem;
+  overflow-x: auto;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  margin: 1.1rem 0;
+  border: 1px solid var(--border);
+}
+.prose-paper :not(pre) > code {
+  background: var(--accent-weak);
+  color: var(--accent);
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.3rem;
+  font-size: 0.85em;
+}
+code,
+pre {
+  font-family: var(--font-mono);
+}
+[data-rehype-pretty-code-figure] {
+  margin: 1.1rem 0;
+}
+
+/* Source code browser: line numbers + comfortable reading. */
+.code-viewer pre {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+.code-viewer code {
+  counter-reset: line;
+  display: block;
+}
+.code-viewer .line {
+  counter-increment: line;
+}
+.code-viewer .line::before {
+  content: counter(line);
+  display: inline-block;
+  width: 2.5em;
+  margin-right: 1.25em;
+  text-align: right;
+  color: #8b98a5;
+  opacity: 0.55;
+  user-select: none;
+}

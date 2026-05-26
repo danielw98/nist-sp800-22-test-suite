@@ -1,0 +1,31 @@
+# Run from web/ on the server: `docker compose up -d --build`.
+# The build context is the parent (rngtests/) so the C++ sources and
+# data files are available to the Dockerfile.
+services:
+  rngtests-web:
+    build:
+      context: ..
+      dockerfile: web/Dockerfile
+    container_name: rngtests-web
+    restart: unless-stopped
+    # DFT at the MAX_BITS cap (8,000,000) peaks ~1.0 GB RSS; 2g leaves headroom
+    # for the Node server. VPS-B has the capacity.
+    mem_limit: 2g
+    expose:
+      - "3000"
+    environment:
+      NODE_ENV: production
+      # Owner / trusted IPs that bypass rate limits (comma-separated):
+      # RL_ALLOWLIST: "your.public.ip.here"
+      # Rate limits (generous defaults on a 30-day window; override here if needed):
+      # RL_PER_MIN: "120"
+      # RL_PER_IP_REQ: "100000"
+      # RL_PER_IP_BYTES: "5368709120"     # 5 GiB / 30d / IP
+      # RL_GLOBAL_BYTES: "1099511627776"  # 1 TiB / 30d global
+    networks:
+      - studlab_net
+
+networks:
+  studlab_net:
+    external: true
+    name: studlab_net

@@ -1,0 +1,89 @@
+export const metadata = { title: "4. Simulări - Testul Spectral DFT" };
+
+# 4. Simulări și rezultate
+
+## Validarea implementării
+
+[Suita de validare](/validation) confirmă că motorul rapid coincide cu DFT-ul
+direct (eroare $\sim 10^{-13}$) pentru lungimi de la $n=2$ la $n=1000$, inclusiv
+ne-puteri ale lui 2 (calea Bluestein).
+
+Pe exemplul din NIST SP 800-22 §2.6.8 (100 de biți), implementarea produce:
+
+$$ N_1 = 48,\quad N_0 = 47.5,\quad d = 0.458831,\quad p = 0.646355, $$
+
+**identic** cu codul de referință NIST (compilat separat). Documentația raportează
+$N_1 = 46$; vezi [controverse](/paper/discutie).
+
+## Comportamentul spectral: aleator vs periodic
+
+<img src="/figures/spectrum_random_vs_periodic.svg" alt="Spectru aleator vs periodic" />
+
+La stânga, o secvență aleatoare are spectru relativ plat, cu $\approx 5\%$ vârfuri
+peste prag. La dreapta, o secvență periodică concentrează energie la armonice.
+În [runner](/tests/dft), tiparul `0001` sau „numai 1” dau $p \approx 0$
+(respinse). O subtilitate: o secvență de perioadă **2** (`0101...`) are vârful pe
+componenta Nyquist (exclusă), dar este totuși respinsă - **indirect**: toate
+componentele numărate rămân nule, deci $N_1$ atinge maximul și $d$ devine puternic
+pozitiv.
+
+## Rularea pe fișierele de date NIST
+
+Pe toate secvențele pe care NIST și-a validat suita (100 fluxuri × 10000 biți):
+
+| Fișier | Proporție | Uniformitate p | Verdict |
+| --- | --- | --- | --- |
+| `data.e` | 99/100 | 0.000233 | PASS |
+| `data.pi` | 100/100 | 0.162606 | PASS |
+| `data.sqrt2` | 100/100 | 0.048716 | PASS |
+| `data.sqrt3` | 100/100 | 0.003996 | PASS |
+| `data.sha1` | 100/100 | 0.455937 | PASS |
+
+Toate trec; `data.e` are uniformitatea la limită. Acestea pot fi explorate interactiv în
+[Secvențe NIST](/sequences).
+
+## Performanță
+
+Transformata rapidă face testul practic chiar și la scară mare (g++ 14.2, `-O2`):
+
+| Sarcină | Timp |
+| --- | --- |
+| Un FFT pe $10^6$ biți (Bluestein) | 0.43 s |
+| 500 fluxuri × $10^4$ biți (toate cele 5 fișiere) | 1.7 s |
+
+## Simulare Monte-Carlo sub H0
+
+<img src="/figures/montecarlo_pvalue_uniformity.svg" alt="Distribuția N1 și p sub H0" />
+
+Pe $10^6$ secvențe aleatoare de $n = 4096$ (generator PCG64, nu `rand()`):
+deviația standard empirică a lui $N_1$ este $\sigma_{\text{emp}} \approx 7.17$, iar
+cea presupusă de NIST este $\sigma_{\text{NIST}} \approx 6.97$ (raport $\approx
+1.03$, deci $\operatorname{Var}(d) \approx 1.056$ în loc de $1$). Rata empirică de
+respingere sub $H_0$ este $\approx 0.012$, peste valoarea nominală $0.01$: testul
+respinge generatoare bune ceva mai des decât ar trebui. Valoarea $1.056$ se
+potrivește cu $4/3.8 \approx 1.05$ prezisă de constanta corectată a lui Pareschi -
+vezi [controverse](/paper/discutie).
+
+## Deviația standard pe fiecare generator
+
+Ca să verificăm dacă ușoara umflare a varianței ($\operatorname{Var}(d) \approx 1.056$)
+se vede și pe sursele reale, am împărțit fiecare fișier ($\approx 10^6$ biți) în blocuri
+de $n = 4096$, am calculat $N_1$ pe fiecare bloc și am comparat deviația standard
+empirică cu $\sigma_{\text{NIST}} = \sqrt{n/4 \cdot 0.95 \cdot 0.05} \approx 6.97$.
+
+| Generator | Blocuri | N1 mediu | σ_emp | σ_emp / σ_NIST | Var(d) |
+| --- | --- | --- | --- | --- | --- |
+| `data.e` | 245 | 1946.0 | 6.95 | 0.997 | 0.994 |
+| `data.pi` | 245 | 1945.5 | 6.77 | 0.971 | 0.943 |
+| `data.sqrt2` | 245 | 1946.2 | 6.79 | 0.973 | 0.947 |
+| `data.sqrt3` | 245 | 1946.0 | 7.56 | 1.084 | 1.176 |
+| `data.sha1` | 244 | 1945.5 | 6.74 | 0.967 | 0.934 |
+| PCG64 (Monte-Carlo) | 10⁶ | 1945.6 | 7.17 | 1.028 | 1.056 |
+
+Cele cinci surse reale se grupează strâns în jurul lui $\sigma_{\text{NIST}}$ (rapoarte
+între 0.97 și 1.08, medie 0.998); niciuna nu prezintă o varianță anormală. Un singur
+fișier oferă însă doar $\approx 245$ de blocuri, adică o incertitudine de eșantionare
+de circa $1/\sqrt{2 \cdot 245} \approx 4.5\%$: la acest nivel de zgomot, umflarea de
+$\approx 5\%$ nu poate fi distinsă dintr-un singur fișier (intervalul $[0.97, 1.08]$
+acoperă atât 1.00, cât și 1.03 măsurat de simulare), iar doar cele $10^6$ de secvențe
+ale simulării Monte-Carlo o separă clar de zero. Reproductibil cu `docs/sigma_table.py`.

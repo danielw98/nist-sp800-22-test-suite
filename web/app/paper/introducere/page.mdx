@@ -1,0 +1,61 @@
+export const metadata = { title: "1. Introducere - Testul Spectral DFT" };
+
+# 1. Introducere și motivație
+
+## Contextul: aleatorismul în criptografie
+
+Securitatea aproape oricărui sistem criptografic depinde de calitatea
+generatoarelor de numere (pseudo)aleatoare. Cheile secrete, vectorii de
+inițializare, nonce-urile și parametrii efemeri trebuie să fie impredictibili:
+dacă un atacator poate ghici sau reconstrui ieșirea generatorului, întreaga
+construcție criptografică se prăbușește, indiferent cât de robust este cifrul de
+deasupra.
+
+De aceea generatoarele (RNG / PRNG) sunt supuse unor baterii de teste statistice.
+Aceste teste nu pot *demonstra* că o secvență este aleatoare, dar pot respinge
+ipoteza de aleatorism când secvența prezintă regularități măsurabile. Suita
+**NIST SP 800-22** este referința standard: 15 teste, fiecare sensibil la un alt
+tip de abatere.
+
+## Ce măsoară testul spectral
+
+Testul Transformatei Fourier Discrete (testul spectral, secțiunea 2.6) mută
+secvența în **domeniul frecvenței**:
+
+- o secvență cu adevărat aleatoare are un spectru aproximativ plat (zgomot alb):
+  nicio frecvență nu domină;
+- o secvență cu o componentă periodică concentrează energie la anumite frecvențe,
+  producând **vârfuri** înalte în spectru.
+
+Testul numără câte vârfuri spectrale depășesc un prag corespunzător nivelului de
+95% și compară cu valoarea așteptată sub ipoteza de aleatorism. Acest efect se poate
+vedea direct în [runner](/tests/dft) și în [galeria de figuri](/figures).
+
+## De ce acest test
+
+Este conceptual atrăgător (leagă prelucrarea semnalelor de criptografie) și,
+totodată, **cel mai contestat test din suită**: literatura semnalează erori în
+fundamentarea sa teoretică și în implementarea de referință, iar chiar exemplul
+numeric din documentația oficială este inconsistent cu propriul cod de referință
+(vezi [controversele](/paper/discutie)). Asta îl face ideal pentru un studiu
+critic: nu reproducem o rețetă, o verificăm.
+
+## Obiective
+
+Concret, lucrarea își propune:
+
+1. implementarea testului într-o bibliotecă C++ fidelă codului de referință NIST,
+   structurată pe componente clare, astfel încât să poată găzdui întreaga suită;
+2. adăugarea unei transformate rapide (FFT) care permite rularea pe secvențe de
+   ordinul milioanelor de biți, nu doar pe exemplul didactic de 100 de biți;
+3. validarea implementării și rularea ei pe *toate* secvențele pe care NIST și-a
+   testat suita;
+4. analiza critică a rezultatelor și a controverselor cunoscute, susținută de
+   simulări proprii.
+
+## Structura
+
+[Capitolul 2](/paper/matematica) prezintă fundamentarea matematică,
+[capitolul 3](/paper/implementare) arhitectura implementării,
+[capitolul 4](/paper/simulari) validarea și simulările, iar
+[capitolul 5](/paper/discutie) avantajele, limitările și controversele.

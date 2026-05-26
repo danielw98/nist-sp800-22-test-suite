@@ -1,0 +1,86 @@
+export const metadata = { title: "5. Controverse - Testul Spectral DFT" };
+
+# 5. Avantaje, limitări și controverse
+
+## Avantaje
+
+- **Unic în suită**: singurul test în domeniul frecvenței; detectează periodicități
+  globale pe care testele din domeniul timpului le pot rata.
+- **Intuiție clară**: „vârf spectral peste prag”.
+- **Practic la scară mare**: cu o transformată $O(n\log n)$, milioane de biți în
+  fracțiuni de secundă.
+
+## Controversă 1: documentația își contrazice propriul cod
+
+Documentația NIST (§2.6.8) afirmă, pentru exemplul de 100 de biți, $N_1 = 46$ și
+$p = 0.168669$. Dar o transformată Fourier **corectă** dă $N_1 = 48$ și
+$p = 0.646355$. Nu e o eroare a implementării noastre: am compilat și rulat codul
+de referință NIST original (FFT-ul `__ogg_fdrfftf`) și acesta dă tot $48$;
+verificarea cu numpy confirmă. Mai mult, nicio convenție rezonabilă de selecție a
+componentelor (cu sau fără DC, cu sau fără Nyquist) nu produce $46$: toate dau între
+$47$ și $49$, deci $46$ nu e o interpretare alternativă validă, ci o eroare de calcul.
+
+<img src="/figures/example_threshold_46_vs_48.svg" alt="Exemplul NIST 46 vs 48" />
+
+Reproducerea valorii documentate ar necesita un prag sensibil mai mic decât cel
+specificat: două vârfuri de la limită ($|S[23]| = 16.81$, $|S[40]| = 17.20$) se
+află sub pragul corect $T = 17.31$ (deci numărate, $N_1 = 48$), dar ar fi excluse de
+un prag cu $\approx 5\%$ mai mic ($\approx 16.48$), caz în care $N_1 = 46$.
+Numărătoarea este foarte sensibilă la valoarea exactă a pragului, iar valoarea
+documentată $46$ nu corespunde pragului specificat - de aici nevoia de o corecție
+principială a parametrilor, în spiritul celei propuse de autorii care au studiat
+testul (controversele de mai jos). Vezi [demonstrația interactivă](/controversy).
+
+## Controversă 2: distribuția de referință nu a fost dedusă, ci estimată
+
+Kim et al. (2004) și Hamano (2005) au arătat că **distribuția de
+referință nu a fost dedusă matematic**, ci estimată numeric rulând un PRNG presupus
+„bun” - un raționament circular. Drept urmare, pragul a fost corectat de la
+$\sqrt{3n}$ la valoarea exactă $\sqrt{\ln(20)\,n}$, dar varianța a rămas.
+
+## Controversă 3: varianța de normalizare
+
+Factorul $\tfrac{n}{4}$ (jumătate din varianța binomială naivă) ține cont de dependența
+spectrală indusă de Parseval, dar nu exact:
+
+- Pareschi, Rovatti și Setti (2012) au arătat că o constantă $c \approx 3.8$ (în loc
+  de $4$) se potrivește mai bine, iar rata reală de respingere diferă de cea
+  nominală;
+- lucrări ulterioare au derivat varianța corectă din teorema lui Parseval și au
+  arătat că $d$ nu urmează exact $\mathcal{N}(0,1)$.
+
+[Simularea noastră](/paper/simulari) confirmă: $\operatorname{Var}(d) \approx 1.056$,
+în acord cu $4/3.8 \approx 1.05$; rata de respingere urcă la $\approx 0.012$.
+
+## Alte limitări
+
+- **Bug istoric** în codul original (citire în afara limitelor: `X[n]`), corectat
+  ulterior.
+- **Alegerea componentelor** (DC inclus, Nyquist exclus) e o convenție subtilă;
+  multe reimplementări o inversează și obțin alt $N_1$.
+- **Componentele de capăt**: vârful unei periodicități de perioadă 2 cade pe
+  Nyquist (exclus); secvența e totuși respinsă, dar indirect.
+- **Testele de nivel 2** (proporție/uniformitate) au putere redusă; au fost propuse
+  variante mai fiabile.
+
+## Îmbunătățiri posibile
+
+- folosirea varianței asimptotice corecte (Hamano, Pareschi) sau calibrarea prin
+  simulare, astfel încât rata de respingere să coincidă cu cea nominală;
+- înlocuirea motorului propriu cu o bibliotecă FFT optimizată (FFTW) pentru secvențe
+  foarte mari, păstrând interfața `DftEngine`;
+- includerea componentei Nyquist și tratarea separată a componentei DC, pentru ca
+  vârfurile de la capete să fie observate direct și pentru a elimina inconsistența de
+  model (cu recalibrarea corespunzătoare a lui $N_0$);
+- corectarea documentației oficiale: faptul că exemplul a rămas greșit prin mai multe
+  revizii (până în Rev 1a, 2010), deși corecțiile erau publicate din 2004, este în
+  sine o controversă de mentenanță a standardului.
+
+## Concluzie
+
+Testul spectral are o calitate reală - este singurul din suită care privește
+secvența în domeniul frecvenței - dar trebuie folosit cu rezerve: distribuția de
+referință nu a fost dedusă analitic, exemplul din documentație contrazice codul, iar
+varianța e doar aproximativ corectă. În practică: folosit alături de alte teste, nu
+izolat, cu verdictul interpretat ținând cont de abaterea sistematică măsurată. Vezi
+[referințele](/references) pentru sursele complete.

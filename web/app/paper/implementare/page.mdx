@@ -1,0 +1,102 @@
+export const metadata = { title: "3. Implementare - Testul Spectral DFT" };
+
+# 3. Modul de implementare
+
+## Arhitectura bibliotecii
+
+Testul este organizat ca o bibliotecă C++ orientată pe obiecte, cu două cerințe de
+proiectare în prim-plan: o transformată $O(n\log n)$ (un DFT direct $O(n^2)$ ar fi
+inutilizabil peste câteva mii de biți) și o structură modulară, reutilizabilă:
+
+- **`DftEngine`** (interfață) cu `FftEngine` (radix-2 + Bluestein, $O(n\log n)$) și
+  `DirectDftEngine` ($O(n^2)$, pentru verificare) - tipar Strategy.
+- **`BitSequence`** concentrează toate sursele de intrare (text, binar, stdin),
+  conversia bipolară și împărțirea în fluxuri.
+- **`RandomnessTest`** / **`SpectralTest`** - testul 2.6.
+- **`Assessment`** - proporție + uniformitate peste multe fluxuri.
+
+Aceeași arhitectură deservește întreaga suită SP 800-22: fiecare test implementează
+`RandomnessTest` (un `TestReport` uniform) și se înregistrează printr-o linie, deci
+[toate cele 15 teste](/tests) folosesc același motor, API și pagini. Lucrarea rămâne
+concentrată pe testul spectral. Codul, evidențiat sintactic, poate fi consultat în
+[Cod sursă](/source).
+
+## Nucleul testului
+
+Pașii 1-8 din [capitolul matematic](/paper/matematica) se regăsesc unu-la-unu:
+
+```cpp
+SpectralResult SpectralTest::analyze(const BitSequence &seq) const
+{
+    const std::size_t n = seq.size();
+    // Pasii 1-2: bitii devin +/-1, apoi DFT.
+    const std::vector<Complex> spectrum = engine_->transform(seq.toBipolar());
+
+    // Pasul 3: primele n/2 module (DC inclus, Nyquist exclus).
+    const std::size_t half = n / 2;
+    // Pasul 4: pragul de 95%.
+    const double threshold = std::sqrt(std::log(20.0) * (double)n);
+
+    // Pasul 6: cate varfuri cad sub prag.
+    long n1 = 0;
+    for (std::size_t i = 0; i < half; i++)
+        if (std::abs(spectrum[i]) < threshold)
+            n1++;
+
+    SpectralResult r;
+    r.n0 = 0.95 * (double)n / 2.0;                          // Pasul 5
+    const double denom = std::sqrt((double)n / 4.0 * 0.95 * 0.05);
+    r.d = ((double)n1 - r.n0) / denom;                      // Pasul 7
+    r.pValue = std::erfc(std::fabs(r.d) / std::sqrt(2.0));  // Pasul 8
+    return r;
+}
+```
+
+Rezultatul este exact cel produs de aritmetica corectă, identic cu al codului de
+referință NIST.
+
+## Transformata rapidă pentru lungimi arbitrare
+
+DFT-ul direct ar însemna $\approx 10^{12}$ operații pentru un milion de biți.
+Fișierele NIST au $\approx 10^6$ biți, iar $10^6$ nu este o putere a lui 2, deci
+un FFT radix-2 clasic nu se aplică direct.
+
+Soluția este **algoritmul lui Bluestein** (chirp-z), care exprimă un DFT de lungime
+arbitrară $n$ printr-o convoluție calculabilă cu un FFT radix-2:
+
+$$ S[k] = e^{-i\pi k^2/n} \sum_{j=0}^{n-1} \big(x_j\, e^{-i\pi j^2/n}\big)\, e^{\,i\pi (k-j)^2/n}. $$
+
+Complexitatea devine $O(n\log n)$; o secvență de $10^6$ biți se procesează în
+$\approx 0.43$ secunde.
+
+## Intrare/ieșire
+
+`BitSequence` acceptă atât fișiere ASCII (în care se păstrează doar caracterele `'0'`
+și `'1'`, ignorând spații și linii noi, cum sunt `data.e`, `data.pi`) cât și fișiere
+binare (fiecare octet despachetat în 8 biți, MSB întâi, cum este `data.sha1`).
+Detecția formatului este automată.
+
+## Analiza de nivel 2
+
+Pentru a reproduce analiza globală NIST, `Assessment` împarte secvența în fluxuri,
+rulează testul pe fiecare și calculează **proporția** de treceri (cu intervalul
+$\hat p \pm 3\sqrt{\hat p\,\alpha/s}$) și **uniformitatea** valorilor $p$ (test
+$\chi^2$ pe 10 intervale, transformat prin funcția gamma incompletă regularizată).
+
+Aplicația web rulează exact aceste binare prin [API-ul public](/api-docs).
+
+## Compilare și validare
+
+Proiectul se compilează cu CMake și Ninja:
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
+Suita `dft_tests` (doctest) verifică, printre altele, două lucruri: (i) că `FftEngine`
+și `DirectDftEngine` coincid până la $10^{-9}$ pe intrări aleatoare de diverse lungimi
+(inclusiv ne-puteri ale lui 2) și (ii) că testul reproduce exact rezultatul codului de
+referință NIST pe exemplul din secțiunea 2.6.8. Pentru acesta din urmă am extras și
+compilat FFT-ul original (`__ogg_fdrfftf` din `dfft.c`) și am rulat logica originală
+`DiscreteFourierTransform`, obținând valorile față de care ne validăm.

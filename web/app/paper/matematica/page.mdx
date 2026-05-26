@@ -1,0 +1,164 @@
+export const metadata = { title: "2. Partea matematică - Testul Spectral DFT" };
+
+# 2. Partea matematică: descrierea și justificarea testului
+
+## Procedura testului
+
+**Intrări:**
+
+- $\varepsilon = \varepsilon_1\dots\varepsilon_n$ - secvența de biți testată ($\varepsilon_i \in \{0,1\}$);
+- $n$ - lungimea secvenței (NIST recomandă $n \ge 1000$);
+- $\alpha$ - nivelul de semnificație (implicit $0.01$).
+
+**Ieșiri:**
+
+- $p$ - valoarea $p$ a testului, $p \in [0,1]$;
+- decizia: *aleator* ($p \ge \alpha$, nu se respinge $H_0$) sau *nealeator*.
+
+Pașii:
+
+1. Conversie bipolară: $x_i = 2\varepsilon_i - 1$.
+2. DFT: $S = \mathrm{DFT}(X)$.
+3. Module: $M_k = |S[k]|$, pentru $k = 0,\dots,n/2-1$.
+4. Prag: $T = \sqrt{\ln(20)\,n}$.
+5. $N_0 = 0.95\cdot n/2$ (numărul așteptat de vârfuri sub $T$).
+6. $N_1$: câte module sunt sub $T$.
+7. $d = (N_1 - N_0)/\sqrt{n/4 \cdot 0.95 \cdot 0.05}$.
+8. $p = \operatorname{erfc}(|d|/\sqrt{2})$.
+
+Decizie ($\alpha = 0.01$): dacă $p < \alpha$, secvența e nealeatorie; altfel nu se
+respinge. Restul capitolului justifică fiecare pas.
+
+## Ipoteza nulă și conversia bipolară
+
+Fie $\varepsilon = \varepsilon_1\varepsilon_2\dots\varepsilon_n$ secvența testată.
+Ipoteza nulă $H_0$ este că biții sunt independenți și identic distribuiți, fiecare
+cu $\Pr(\varepsilon_i = 0) = \Pr(\varepsilon_i = 1) = 1/2$.
+
+Primul pas transformă biții în valori **bipolare**:
+
+$$ x_i = 2\varepsilon_i - 1 \in \{-1, +1\}. $$
+
+Sub $H_0$, $\mathbb{E}[x_i] = 0$ și $\operatorname{Var}(x_i) = 1$. Centrarea elimină
+componenta medie, astfel încât spectrul reflectă structura, nu dezechilibrul global
+dintre 0 și 1.
+
+## Transformata Fourier discretă
+
+$$ S[k] = \sum_{j=0}^{n-1} x_j\, e^{-2\pi i\, jk/n}, \qquad k = 0,1,\dots,n-1. $$
+
+Deoarece $x_j$ sunt reale, spectrul satisface simetria hermitică
+$S[n-k] = \overline{S[k]}$, deci $|S[n-k]| = |S[k]|$. Informația neredundantă se
+află în primele $\lfloor n/2\rfloor + 1$ componente. Testul folosește **primele
+$n/2$ module**, $|S[0]|, \dots, |S[n/2-1]|$: include componenta continuă (DC,
+$S[0] = \sum_j x_j$) și exclude componenta Nyquist $S[n/2]$.
+
+## Distribuția modulelor sub H0
+
+Scriind $S[k] = A_k + iB_k$, pentru $0 < k < n/2$ părțile $A_k, B_k$ sunt sume de
+variabile independente mărginite; prin teorema limită centrală sunt aproximativ
+gaussiene de medie nulă, cu
+
+$$ A_k,\, B_k \sim \mathcal{N}\!\left(0, \tfrac{n}{2}\right). $$
+
+Atunci $|S[k]|^2 = A_k^2 + B_k^2$ urmează o lege exponențială de medie $n$
+(echivalent, $|S[k]|$ este Rayleigh):
+
+$$ \Pr\big(|S[k]|^2 \le t\big) = 1 - e^{-t/n}. $$
+
+(Componenta DC face excepție: $S[0] \sim \mathcal{N}(0, n)$ este reală, deci
+$|S[0]|^2$ este $\chi^2_1$, nu exponențială - o mică inconsistență de model.)
+
+## Pragul de 95% și statistica de test
+
+Căutăm pragul $T$ pentru care $95\%$ dintre module sunt sub $T$:
+
+$$ 1 - e^{-T^2/n} = 0.95 \;\Longrightarrow\; \frac{T^2}{n} = \ln 20, $$
+
+de unde
+
+$$ \boxed{\,T = \sqrt{\ln(20)\,n} = \sqrt{2.995732274\,n}\,.} $$
+
+Aici $\ln$ este logaritmul natural; standardul NIST notează „$\log$”, iar valoarea
+folosită este cea naturală, $\ln 20 = 2.9957$.
+
+Versiunea originală a standardului folosea pragul aproximativ $\sqrt{3n}$; valoarea
+exactă $\sqrt{\ln(20)\,n}$ este una dintre corecțiile propuse de Kim et al.
+și adoptate ulterior (vezi [controverse](/paper/discutie)).
+
+Fie $N_1$ numărul de module sub prag și $N_0 = 0.95 \cdot \tfrac{n}{2}$ valoarea
+așteptată (un număr de vârfuri, nu o mărime comparabilă cu $T$). Dacă cele $n/2$
+evenimente ar fi independente, $N_1$ ar fi binomial cu
+varianță $\tfrac{n}{2}\cdot 0.95 \cdot 0.05$. În realitate, constrângerea lui
+Parseval introduce o corelație care reduce varianța; NIST folosește empiric
+**jumătate** din varianța binomială naivă:
+
+$$ d = \frac{N_1 - N_0}{\sqrt{\,\tfrac{n}{4}\cdot 0.95 \cdot 0.05\,}}. $$
+
+## Valoarea p și decizia
+
+Sub $H_0$, $d$ este presupus $\mathcal{N}(0,1)$, iar testul este bilateral:
+
+$$ p = \operatorname{erfc}\!\left(\frac{|d|}{\sqrt{2}}\right). $$
+
+Funcția erorilor și complementara ei sunt
+
+$$ \operatorname{erf}(x) = \frac{2}{\sqrt{\pi}}\int_0^x e^{-t^2}\,dt, \qquad \operatorname{erfc}(x) = 1 - \operatorname{erf}(x) = \frac{2}{\sqrt{\pi}}\int_x^{\infty} e^{-t^2}\,dt. $$
+
+Factorul $\sqrt{2}$ vine din normalizarea gaussiană: pentru $Z \sim \mathcal{N}(0,1)$,
+$\Pr(|Z| > a) = \operatorname{erfc}(a/\sqrt{2})$, deci $p$ este probabilitatea cozii
+bilaterale pentru $|d|$.
+
+La nivelul $\alpha = 0.01$: dacă $p < \alpha$, secvența este declarată
+**nealeatorie**. Un $d$ negativ înseamnă prea multe vârfuri peste prag
+(periodicitate); un $d$ pozitiv înseamnă prea puține (spectru anormal de neted).
+
+**Echivalent (valoare critică din tabelă):** cum $d$ este sub $H_0$ aproximativ
+$\mathcal{N}(0,1)$ și testul e bilateral, se respinge dacă $|d| > z_{1-\alpha/2}$,
+adică dacă $d$ iese din intervalul de acceptare $[-z_{1-\alpha/2}, z_{1-\alpha/2}]$.
+Cele două reguli sunt identice: $p = \operatorname{erfc}(|d|/\sqrt2) < \alpha
+\iff |d| > z_{1-\alpha/2}$. Pentru $\alpha = 0.01$: $z_{0.995} = 2.576$, deci se
+acceptă dacă $d \in [-2.576, 2.576]$; pentru $\alpha = 0.05$, intervalul e $[-1.96, 1.96]$.
+
+Factorul $\tfrac{n}{4}$ este doar aproximativ corect - vezi
+[controversa varianței](/paper/discutie).
+
+## Exemplu numeric pas cu pas
+
+Cei opt pași pe secvența de 100 de biți din NIST (sec. 2.6.8),
+$\varepsilon = 1100\,1001\,0000\,1111\,1101\,1010\,1010\dots$
+
+**1. Conversie bipolară** ($x_i = 2\varepsilon_i - 1$, deci $0 \mapsto -1$, $1 \mapsto +1$):
+
+$$ \varepsilon: 1,1,0,0,1,0,0,1,\dots \;\longmapsto\; x: +1,+1,-1,-1,+1,-1,-1,+1,\dots $$
+
+**2. DFT:** se calculează (prin FFT) $S[0],\dots,S[99]$; $S[0] = \sum_i x_i = (\#1)-(\#0)$.
+
+**3. Module:** reținem $M_k = |S[k]|$ pentru $k = 0,\dots,49$ ($S[0]$ inclus, $S[50]$ exclus).
+Primele opt, calculate de implementare (identice cu `numpy.fft`):
+
+| $k$   | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 |
+|-------|--------|-------|-------|-------|--------|--------|-------|-------|
+| $M_k$ | 16.000 | 6.449 | 6.958 | 7.095 | 11.865 | 11.481 | 7.014 | 5.337 |
+
+Toate sunt sub pragul $T = 17.31$; $|S[0]| = 16$ confirmă $S[0] = (\#1) - (\#0) = 42 - 58 = -16$.
+
+**4. Prag:** $T = \sqrt{\ln(20)\cdot 100} = \sqrt{299.5732} = 17.3082$.
+
+**5. Așteptat:** $N_0 = 0.95 \cdot 50 = 47.5$.
+
+**6. Observat:** $N_1 = \#\{k : M_k < 17.3082\} = 48$.
+
+**7. Statistică:**
+
+$$ d = \frac{N_1 - N_0}{\sqrt{\tfrac{n}{4}\cdot 0.95 \cdot 0.05}} = \frac{48 - 47.5}{\sqrt{25 \cdot 0.0475}} = \frac{0.5}{1.08972} = 0.45883. $$
+
+**8. Valoarea p:**
+
+$$ p = \operatorname{erfc}\!\left(\frac{|d|}{\sqrt{2}}\right) = \operatorname{erfc}\!\left(\frac{0.45883}{1.41421}\right) = \operatorname{erfc}(0.32445) = 0.64636. $$
+
+Cum $p = 0.6464 \ge 0.01$, secvența nu se respinge. Echivalent, $d = 0.459 \in
+[-2.576, 2.576]$ (în afara zonei critice) - aceeași concluzie. Documentația
+raportează $N_1 = 46$ (deci $d = -1.376$, $p = 0.168669$); și acest $d$ cade în
+$[-2.576, 2.576]$, deci verdictul rămâne „aleator”, dar $p$ diferă mult.
+Neconcordanța apare la pasul 6 - vezi [controverse](/paper/discutie).
